@@ -1,0 +1,19 @@
+{
+ "nome": "Creality Ender-3 V3 SE",
+ "mesa": {
+  "x": 220,
+  "y": 220,
+  "z": 250
+ },
+ "cuspir": {
+  "x": 5.0,
+  "y": 5.0,
+  "z": 30.0,
+  "purga_mm": 40.0,
+  "purga_extra_mm": 10.0,
+  "descarregar_mm": 80.0,
+  "carregar_mm": 60.0,
+  "espera_max_min": 15.0,
+  "temp_espera": 170
+ }
+}

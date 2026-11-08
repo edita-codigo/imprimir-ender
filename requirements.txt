@@ -1,0 +1,16 @@
+pyserial
+numpy
+scipy
+pillow
+trimesh
+shapely
+manifold3d
+mapbox-earcut
+matplotlib
+httpx
+mcp
+lxml
+networkx
+imageio
+websockets
+requests

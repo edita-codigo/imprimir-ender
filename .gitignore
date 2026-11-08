@@ -1,0 +1,24 @@
+__pycache__/
+*.bak*
+*.gcode
+*.stl
+# dados pessoais e segredos (criados pelo programa)
+_PRIVADO*
+mcp_cfg.json
+idioma.json
+trabalho.json
+rolo.json
+mesa_layout.json
+historico_impressoes.json
+timelapse.json
+cores.json
+suporte.json
+presets_ajustes.json
+fila.json
+vigia_fotos/
+timelapse/
+recebidos/
+importados/
+pecas_editadas/
+idiomas/_*
+notificar_pushover.py

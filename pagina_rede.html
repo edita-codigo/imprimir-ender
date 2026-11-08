@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B0F16"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json"><link rel="icon" href="/icone.svg"><link rel="apple-touch-icon" href="/icone.svg">
+<title>Ender-3 V3 SE</title>
+<style>
+:root{--bg:#0B0F16;--card:#141A24;--card2:#1A2230;--line:#242E3F;--txt:#EEF3FA;--dim:#8D9BB0;--ok:#34D399;--bico:#FF8A3D;--mesa:#5AB0FF;--err:#FF6B6B;--am:#F7C948;--r:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif}
+body{max-width:640px;margin:auto;padding:0 14px calc(86px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 80%,transparent);padding:calc(10px + env(safe-area-inset-top)) 0 8px;display:flex;align-items:center;gap:10px}
+header h1{font-size:18px;margin:0;flex:1}header .pt{color:var(--dim);font-size:12px;font-weight:600}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--err);box-shadow:0 0 0 4px #ff6b6b22}.dot.on{background:var(--ok);box-shadow:0 0 0 4px #34d39922}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:10px 0}
+.lbl{color:var(--dim);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.big{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.1}.dim{color:var(--dim);font-size:13px}.msg{font-weight:700;margin:2px 0}
+.bar{height:10px;background:#252E3E;border-radius:99px;overflow:hidden;margin-top:10px}.bar>i{display:block;height:100%;width:0;border-radius:99px;background:var(--ok);transition:width .6s}
+.hero{text-align:center;padding:18px 14px}.pct{font-size:60px;font-weight:900;letter-spacing:-.04em;line-height:1}
+.chip{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12px;color:var(--dim);margin:2px}
+button{font:inherit;font-weight:800;border:0;border-radius:14px;padding:14px;width:100%;margin:5px 0;color:#08110d;background:var(--ok);cursor:pointer;transition:transform .08s,opacity .2s}
+button:active{transform:scale(.97)}button:disabled{opacity:.3}
+.b2{background:var(--err);color:#1a0808}.b3{background:var(--mesa);color:#06121d}.b4{background:var(--am);color:#1b1500}.b5{background:var(--bico);color:#1d0d00}.bg{background:var(--card2);color:var(--txt);border:1px solid var(--line)}.sm{padding:10px;font-size:14px}
+input[type=text],textarea,select{width:100%;background:#0B0F16;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit}textarea{resize:vertical;min-height:84px}
+.aviso{display:none;background:linear-gradient(135deg,#4a2a0c,#3a1d22);border:1.5px solid var(--bico);border-radius:var(--r);padding:14px;font-weight:800;margin:10px 0;animation:pulso 1.6s infinite}
+@keyframes pulso{50%{box-shadow:0 0 0 6px #ff8a3d33}}
+.et div{padding:5px 0;font-size:14px;display:flex;gap:10px;align-items:center}.et .f{color:var(--ok)}.et .a{color:var(--am);font-weight:800}.et .p{color:var(--dim)}
+pre{background:#080B10;color:#9fb3c8;font-size:11px;padding:10px;border-radius:12px;white-space:pre-wrap;max-height:220px;overflow:auto;margin:0}
+.fi{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;display:flex;gap:8px}.fi:last-child{border:0}.fi .e{color:var(--dim);min-width:84px}.fi.im{color:var(--am)}.fi.ok{color:var(--ok)}.fi.er{color:var(--err)}
+.cor{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.cor:last-child{border:0}.sw{width:26px;height:26px;border-radius:8px;border:2px solid #ffffff22;flex:none}
+.cor .n{flex:1;font-weight:700}.cor .d{color:var(--dim);font-size:12px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:9;background:#0d121bf2;backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.tabs div{display:flex;width:100%;max-width:640px}.tabs a{flex:1;text-align:center;padding:7px 2px;color:var(--dim);font-size:11px;font-weight:700;border-radius:12px;text-decoration:none}
+.tabs a i{display:block;font-style:normal;font-size:20px;line-height:1.2}.tabs a.on{color:var(--txt);background:var(--card2)}
+.tab{display:none}.tab.on{display:block}
+.foto{width:100%;border-radius:12px;display:block;background:#000;min-height:120px}
+.seg{display:flex;gap:6px}.seg button{margin:0;padding:10px 4px;font-size:13px;background:var(--card2);color:var(--dim);border:1px solid var(--line)}.seg button.on{background:var(--mesa);color:#06121d;border-color:var(--mesa)}
+.pc{padding:9px 0;border-bottom:1px solid var(--line)}.pc:last-child{border:0}.pc .t{font-weight:700}.pc .t.x{color:var(--err)}
+.off{display:none;background:var(--err);color:#1a0808;text-align:center;font-weight:800;padding:8px;border-radius:12px;margin:6px 0}
+.s{padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}.s b{color:var(--ok)}.s u{color:var(--err);text-decoration:none;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#fff;color:#111;padding:10px 16px;border-radius:99px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20;max-width:90%;text-align:center}.toast.on{opacity:1}
+</style></head><body>
+<header><div class="dot" id="dot"></div><h1>Ender-3 V3 SE</h1><span class="pt" id="porta"></span><select id="lang" aria-label="Idioma / Language" style="width:auto;padding:6px 8px;font-size:13px"><option value="pt">Português</option><option value="en">English</option><option value="es">Español</option><option value="ru">Русский</option></select></header>
+<div class="off" id="off">Sem conexão com o PC… tentando de novo</div>
+<div class="aviso" id="pausa"></div>
+
+<!-- ============ INÍCIO ============ -->
+<section class="tab on" id="t-ini">
+ <div class="card hero"><div class="pct" id="pct">0%</div><div class="msg" id="msg">Parado.</div><div class="bar"><i id="pb"></i></div>
+  <div class="dim" id="tempo" style="margin-top:10px"></div><div class="dim" id="cam"></div></div>
+ <div class="g2">
+  <div class="card"><div class="lbl">Bico</div><div class="big" style="color:var(--bico)" id="bico">--</div><div class="dim" id="bicoa"></div><div class="bar"><i id="bb" style="background:var(--bico)"></i></div></div>
+  <div class="card"><div class="lbl">Mesa</div><div class="big" style="color:var(--mesa)" id="mesa">--</div><div class="dim" id="mesaa"></div><div class="bar"><i id="mb" style="background:var(--mesa)"></i></div></div>
+ </div>
+ <div class="card"><div class="lbl">Arquivo</div><div id="arq" class="msg">nenhum</div><div class="dim" id="info"></div><div class="dim" id="custo"></div>
+  <input type="file" id="f" accept=".stl,.gcode,.gco" style="display:none"><button class="b3" onclick="$('f').click()">📤 Enviar arquivo (STL ou G-code)</button></div>
+ <button id="bi" onclick="imprimir()">▶ IMPRIMIR</button>
+ <div class="row"><button class="b4" id="bpa" onclick="post('/api/pausar')">⏸ Pausar</button><button id="bco" onclick="post('/api/continuar')">▶ Continuar</button></div>
+ <button class="b5" id="bpu" onclick="post('/api/purgar',{mm:40})">Empurrar 40 mm de filamento (na pausa)</button>
+ <button class="b2" id="bp" onclick="if(confirm(TR('Parar a impressão?')))post('/api/parar')">⏹ PARAR</button>
+ <div class="card"><div class="lbl">Etapas</div><div class="et" id="et"></div></div>
+</section>
+
+<!-- ============ CORES ============ -->
+<section class="tab" id="t-cor">
+ <div class="card"><div class="lbl">Impressão colorida</div><div class="msg" id="cmsg">—</div><div class="dim" id="cdet"></div>
+  <div id="clista" style="margin-top:8px"></div></div>
+ <div class="card"><div class="lbl">Ligar / desligar</div><div class="row"><button class="bg sm" onclick="corAtivo(true)">Ligar cores</button><button class="bg sm" onclick="corAtivo(false)">Desligar</button></div>
+  <div class="dim">As trocas e posições são editadas no PC (aba Cores). Aqui você acompanha e continua a troca.</div></div>
+ <div class="card"><div class="lbl">Na hora da troca</div>
+  <button id="cbco" onclick="post('/api/continuar')">Já troquei o filamento — CONTINUAR</button>
+  <button class="b5" onclick="post('/api/purgar',{mm:40})">Purgar mais 40 mm</button></div>
+</section>
+
+<!-- ============ CÂMERA ============ -->
+<section class="tab" id="t-cam">
+ <div class="card"><div class="lbl">Vigia</div><img class="foto" id="foto" alt="sem foto ainda">
+  <div class="row" style="margin-top:8px"><button class="b3 sm" onclick="foto()">📷 Foto agora</button><button class="b4 sm" onclick="flash(true)">💡 Flash ON</button><button class="bg sm" onclick="flash(false)">Flash OFF</button></div>
+  <div class="dim" id="fdet"></div></div>
+ <div class="card"><div class="lbl">Vigia com IA</div><div class="row"><button class="bg sm" onclick="vigia('ativar',{ativo:true})">Ligar vigia</button><button class="bg sm" onclick="vigia('ativar',{ativo:false})">Desligar</button></div>
+  <button class="b3 sm" onclick="vigia('testar')">Analisar agora (usa 1 chave da IA)</button><div class="msg" id="vres"></div></div>
+ <div class="card"><div class="lbl">Foto automática a cada 20 s</div><button class="bg sm" id="bauto" onclick="auto()">Ligar atualização automática</button></div>
+</section>
+
+<!-- ============ MESA ============ -->
+<section class="tab" id="t-mes">
+ <div class="card"><div class="lbl">Peças na mesa <span id="mtam"></span></div><div id="mlista"></div><div class="dim" id="mtmp"></div></div>
+ <div class="card"><div class="lbl">Ações</div>
+  <div class="row"><button class="bg sm" onclick="mesa('organizar')">Organizar</button><button class="bg sm" onclick="mesa('encher')">Encher a mesa</button></div>
+  <button class="b3" onclick="mesa('fatiar')">✂ Fatiar a mesa</button><button class="bg sm" onclick="if(confirm(TR('Tirar todas as peças da mesa?')))mesa('limpar')">Limpar a mesa</button></div>
+ <div class="card"><div class="lbl">Suporte</div><div class="seg" id="seg"><button onclick="sup('nenhum')" data-v="nenhum">Nenhum</button><button onclick="sup('mesa')" data-v="mesa">Só na mesa</button><button onclick="sup('tudo')" data-v="tudo">Em tudo</button></div>
+  <div class="seg" id="seg2" style="margin-top:8px"><button onclick="supE('normal')" data-v="normal">Normal</button><button onclick="supE('arvore')" data-v="arvore">Árvore</button></div><div class="dim" id="sdet"></div></div>
+</section>
+
+<!-- ============ MAIS ============ -->
+<section class="tab" id="t-mais">
+ <div class="card"><div class="lbl">Fila de impressão</div><div id="fmsg" class="msg"></div><div id="fitens"></div>
+  <button class="b5" id="bfc" onclick="post('/api/fila/continuar')">Tirei a peça, continuar</button>
+  <div class="row"><button id="bfi" onclick="if(confirm(TR('Começar a fila?')))post('/api/fila/comecar')">Começar</button><button class="b2" id="bfp" onclick="post('/api/fila/parar')">Parar a fila</button></div>
+  <div class="dim" id="rolo"></div><div class="dim" id="tl"></div></div>
+ <div class="card"><div class="lbl">Criar peça por texto (Zoo)</div><textarea id="zt" placeholder="Ex.: suporte de parede em L, 60 x 20 x 5 mm, com dois furos de 4 mm"></textarea>
+  <button class="b3" onclick="zoo()">✨ Criar a peça</button><div class="msg" id="zmsg"></div><div class="dim">Só funciona se você autorizou na aba “Criar peça” do PC.</div></div>
+ <div class="card"><div class="lbl">Sensor (CR Touch)</div><button class="b4" id="bs" onclick="post('/api/sensor')">Testar o sensor</button><div id="sv" class="msg"></div><div id="si"></div></div>
+ <div class="card"><div class="lbl">Instalar no celular</div><div class="dim">No menu do navegador toque em “Adicionar à tela inicial”. O ícone abre direto, sem precisar do link.</div>
+  <button class="bg sm" onclick="notif()">🔔 Ativar avisos neste celular</button></div>
+ <div class="card"><div class="lbl">Registro</div><pre id="log"></pre></div>
+</section>
+
+<nav class="tabs"><div>
+ <a class="on" data-t="ini"><i>🏠</i>Início</a><a data-t="cor"><i>🎨</i>Cores</a><a data-t="cam"><i>📷</i>Câmera</a><a data-t="mes"><i>🧊</i>Mesa</a><a data-t="mais"><i>⋯</i>Mais</a>
+</div></nav>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=i=>document.getElementById(i);
+
+// ---------- idiomas (pt/en/es/ru): dicionario vem do PC em /idioma/<codigo>.json ----------
+let D={},PAT=[],LG='pt';
+function mk(d){D=d||{};PAT=Object.keys(D).filter(k=>/\{\d\}/.test(k)).map(k=>{const p=k.split(/\{\d\}/);return {rx:new RegExp('^'+p.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('(.+?)')+'$','s'),v:D[k],n:p.join('').length}}).sort((a,b)=>b.n-a.n)}
+function tr1(s){const t=s.trim();if(!t||LG==='pt')return s;let r=D[t];if(r===undefined){for(const p of PAT){const m=p.rx.exec(t);if(m){r=p.v.replace(/\{(\d)\}/g,(_,i)=>tr1(m[+i+1]));break}}}
+ if(r===undefined&&t.includes(' · '))r=t.split(' · ').map(x=>tr1(x)).join(' · ');
+ if(r===undefined&&t.includes('\n'))r=t.split('\n').map(x=>tr1(x)).join('\n');
+ return r===undefined?s:s.replace(t,r)}
+function TR(s){return tr1(s)}
+function trDom(){const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){const pt=n.parentNode&&n.parentNode.tagName;if(pt==='SCRIPT'||pt==='STYLE'||pt==='OPTION')continue;
+  if(n.__o===undefined||(n.__t!==undefined&&n.nodeValue!==n.__t))n.__o=n.nodeValue;const nv=LG==='pt'?n.__o:tr1(n.__o);if(n.nodeValue!==nv)n.nodeValue=nv;n.__t=nv}
+ document.querySelectorAll('[placeholder]').forEach(e=>{if(e.__p===undefined)e.__p=e.getAttribute('placeholder');e.setAttribute('placeholder',LG==='pt'?e.__p:tr1(e.__p))});
+ document.title=LG==='pt'?'Ender-3 V3 SE':'Ender-3 V3 SE'}
+async function setLang(l){LG=l;try{localStorage.setItem('ender_lang',l)}catch(e){}$('lang').value=l;document.documentElement.lang=l;
+ if(l==='pt')mk({});else{try{mk(await (await fetch('/idioma/'+l+'.json')).json())}catch(e){mk({})}}trDom()}
+(function(){let l='pt';try{l=localStorage.getItem('ender_lang')||''}catch(e){}if(!l){const n=(navigator.language||'pt').slice(0,2);l=['pt','en','es','ru'].includes(n)?n:'en'}
+ window.addEventListener('DOMContentLoaded',()=>{$('lang').onchange=e=>setLang(e.target.value);setLang(l)})})();
+let T=new URLSearchParams(location.search).get('t')||'';
+try{if(T)localStorage.setItem('ender_t',T);else T=localStorage.getItem('ender_t')||''}catch(e){}
+if(!T){T=prompt(TR('Cole o link (ou só o código) que aparece no programa do PC:'))||'';if(T.includes('t='))T=T.split('t=')[1].split('&')[0];try{localStorage.setItem('ender_t',T)}catch(e){}}
+if(location.search.includes('t=')&&history.replaceState)history.replaceState(null,'','/');   // tira o token da barra de endereco
+const ET=['Conectar','Esquentar a mesa','Esquentar o bico','Home (zerar eixos)','Linha de limpeza','Imprimindo a peça','Finalizar'];
+const hms=s=>{s=Math.max(0,s|0);return s>=3600?Math.floor(s/3600)+'h '+String(Math.floor(s%3600/60)).padStart(2,'0')+'min':Math.floor(s/60)+'min '+String(s%60).padStart(2,'0')+'s'};
+let tt;function toast(m){const t=$('toast');t.textContent=TR(m);t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2800)}
+async function api(u,b,m){const o={headers:{'X-Token':T}};if(b!==undefined||m==='POST'){o.method='POST';o.headers['Content-Type']='application/json';o.body=JSON.stringify(b||{})}
+ const r=await fetch(u,o);if(r.status==401){toast(TR('Código inválido — reabra pelo link do PC'));throw new Error('401')}return r.json()}
+async function post(u,b){try{const j=await api(u,b||{},'POST');if(j&&j.ok===false)toast(j.erro||'erro');tick();return j}catch(e){}}
+async function imprimir(){if(confirm(TR('Filamento carregado, mesa limpa e cabo USB ligado?\nComeçar a imprimir?')))post('/api/imprimir',{confirmo:true})}
+$('f').onchange=async e=>{const a=e.target.files[0];if(!a)return;$('info').textContent='Enviando '+a.name+'...';
+ const r=await fetch('/api/upload?nome='+encodeURIComponent(a.name),{method:'POST',headers:{'X-Token':T},body:a});const j=await r.json();if(!j.ok)toast(j.erro||'erro');tick()};
+// abas
+document.querySelectorAll('.tabs a').forEach(a=>a.onclick=()=>{document.querySelectorAll('.tabs a').forEach(x=>x.classList.toggle('on',x==a));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id=='t-'+a.dataset.t));
+ try{localStorage.setItem('ender_aba',a.dataset.t)}catch(e){}scrollTo(0,0);if(a.dataset.t=='mes')mesaVer();if(a.dataset.t=='cor')corVer();if(a.dataset.t=='cam'&&!$('foto').src)foto()});
+try{const ab=localStorage.getItem('ender_aba');if(ab)document.querySelector('.tabs a[data-t="'+ab+'"]').click()}catch(e){}
+
+let ultPausa=false,ultFila='';
+async function tick(){try{const s=await api('/api/status');if(!s.ok){$('msg').textContent=s.erro||'sem acesso';return}
+ $('off').style.display='none';$('dot').classList.add('on');
+ $('porta').textContent=s.porta||'';$('arq').textContent=s.arquivo||'nenhum';$('info').textContent=s.info||'';
+ $('bico').textContent=Math.round(s.bico)+'°C';$('bicoa').textContent=s.bico_alvo?'alvo '+Math.round(s.bico_alvo)+'°C':'desligado';$('bb').style.width=(s.bico_alvo?Math.min(100,100*s.bico/s.bico_alvo):0)+'%';
+ $('mesa').textContent=Math.round(s.mesa)+'°C';$('mesaa').textContent=s.mesa_alvo?'alvo '+Math.round(s.mesa_alvo)+'°C':'desligado';$('mb').style.width=(s.mesa_alvo?Math.min(100,100*s.mesa/s.mesa_alvo):0)+'%';
+ $('pct').textContent=Math.round(s.pct)+'%';$('pb').style.width=s.pct+'%';$('pb').style.background=s.erro?'var(--err)':'var(--ok)';$('msg').textContent=s.msg;$('msg').style.color=s.erro?'var(--err)':'';
+ let t='';if(s.decorrido!=null)t='Desde o início: '+hms(s.decorrido);if(s.imprimindo&&s.etapa>=5&&s.falta!=null)t+=' · falta ~'+hms(s.falta)+' · termina ~'+s.termina;$('tempo').textContent=t;
+ $('cam').textContent=s.etapa>=5&&s.ncam?'Camada '+s.cam+' de '+s.ncam:'';
+ $('et').innerHTML=ET.map((n,k)=>{const c=(s.etapa>k||s.etapa==7)?'f':(s.etapa==k?'a':'p');const i=c=='f'?'✔':(c=='a'?'▶':'○');return '<div class="'+c+'"><span>'+i+'</span>'+n+'</div>'}).join('');
+ $('bi').disabled=!s.pode_imprimir;$('bp').disabled=!s.imprimindo;$('bs').disabled=s.ocupado;
+ $('bpa').disabled=!(s.imprimindo&&!s.pausado);$('bco').disabled=!s.pausado;$('bpu').disabled=!s.pausado;$('cbco').disabled=!s.pausado;$('custo').textContent=s.custo_txt||'';
+ const pz=$('pausa');if(s.pausado){pz.style.display='block';pz.textContent='⏸ '+s.msg;if(!ultPausa){try{navigator.vibrate&&navigator.vibrate([300,150,300]);aviso('Impressora pausada',s.msg)}catch(e){}}}else pz.style.display='none';ultPausa=!!s.pausado;
+ const c=s.cores;if(c&&c.ativo!==undefined){$('cmsg').textContent=c.ativo?(c.msg||('Cor atual: '+(c.cor_atual||'-'))):'Desligado (impressão de uma cor só)';$('cdet').textContent=c.ativo?('Trocas feitas: '+c.trocas_feitas+' de '+c.trocas_total+(c.proxima?' · próxima: '+c.proxima.nome+' na camada '+c.proxima.camada:'')):''}
+ const f=s.fila||{itens:[]};$('fmsg').textContent=f.msg||(f.pendentes?f.pendentes+' peça(s) na fila':'Fila vazia');$('fmsg').style.color=f.estado=='esperando_tirar'?'var(--bico)':'';
+ $('fitens').innerHTML=f.itens.map((i,k)=>'<div class="fi '+(i.estado=='imprimindo'?'im':i.estado=='concluida'?'ok':(i.estado=='erro'||i.estado=='parada')?'er':'')+'"><span class="e">'+i.estado_txt+'</span>'+(k+1)+'. '+i.nome+'</div>').join('');
+ $('bfc').disabled=!(f.estado=='esperando_tirar'&&!s.ocupado);$('bfi').disabled=!(f.estado=='parada'&&f.pendentes>0&&!s.ocupado);$('bfp').disabled=f.estado=='parada';
+ if(f.estado=='esperando_tirar'&&ultFila!='esperando_tirar')aviso('Fila','Tire a peça e toque em continuar');ultFila=f.estado||'';
+ if(s.rolo)$('rolo').textContent='Rolo: '+(s.rolo.nome||'')+' · sobram '+Math.round(s.rolo.restam||0)+' g';const tl=s.timelapse||{};$('tl').textContent=tl.ativo?('Time-lapse: '+tl.estado+' · '+tl.fotos+' foto(s)'+(tl.msg?' · '+tl.msg:'')):'';
+ const sn=s.sensor;$('sv').textContent=sn.rodando?'Testando...':(sn.veredito||'');$('si').innerHTML=sn.itens.map(i=>'<div class="s">'+(i.ok?'<b>✔</b>':'<u>✖</u>')+' '+i.nome+' — '+i.detalhe+'</div>').join('');
+ $('log').textContent=s.log.join('\n');trDom()}catch(e){$('off').style.display='block';$('dot').classList.remove('on')}}
+
+// ---- cores
+async function corVer(){try{const j=await api('/api/cores');if(!j.ok)return;const c=j.cfg;let h='<div class="cor"><span class="sw" style="background:'+c.inicial.hex+'"></span><span class="n">'+c.inicial.nome+'</span><span class="d">cor inicial</span></div>';
+ const cam=j.camadas||[];h+=(c.trocas||[]).map((t,k)=>'<div class="cor"><span class="sw" style="background:'+t.hex+'"></span><span class="n">'+(t.nome||'cor '+(k+2))+'</span><span class="d">'+(cam[k]?'camada '+cam[k].camada+' · z '+cam[k].z+' mm':(t.modo=='altura'?t.valor+' mm':'camada '+t.valor))+'</span></div>').join('');
+ if(j.erro)h+='<div class="dim" style="color:var(--err)">'+j.erro+'</div>';$('clista').innerHTML=h;trDom()}catch(e){}}
+async function corAtivo(v){const j=await post('/api/cores',{ativo:v});if(j&&j.ok)toast(v?'Cores ligadas':'Cores desligadas');corVer()}
+// ---- camera
+async function foto(){$('fdet').textContent='Tirando foto...';try{const j=await api('/api/vigia/foto');if(j.ok){$('foto').src='data:image/jpeg;base64,'+j.jpg_base64;$('fdet').textContent='Foto das '+new Date().toLocaleTimeString().slice(0,5)}else $('fdet').textContent=j.erro||'erro'}catch(e){}}
+async function flash(l){const j=await post('/api/vigia/flash',{ligar:l});if(j&&j.ok)toast(l?'Flash ligado':'Flash desligado')}
+async function vigia(a,b){$('vres').textContent='Analisando...';const j=await post('/api/vigia/'+a,b||{});if(!j)return;if(a=='testar'&&j.ok)$('vres').textContent=j.prob_falha+'% de chance de falha · '+j.tipo+' — '+j.motivo;else $('vres').textContent=j.ok?(a=='ativar'?(b.ativo?'Vigia ligado':'Vigia desligado'):''):(j.erro||'')}
+let au=null;function auto(){if(au){clearInterval(au);au=null;$('bauto').textContent='Ligar atualização automática'}else{foto();au=setInterval(()=>{if(document.querySelector('.tab.on').id=='t-cam')foto()},20000);$('bauto').textContent='Desligar atualização automática'}}
+// ---- mesa
+async function mesaVer(){try{const j=await api('/api/mesa');if(!j.ok)return;$('mtam').textContent='· '+j.mesa.x+'×'+j.mesa.y+' mm';
+ $('mlista').innerHTML=j.pecas.length?j.pecas.map(p=>'<div class="pc"><div class="t '+(p.ok?'':'x')+'">'+p.id+'. '+p.nome+(p.ok?'':' — '+(p.motivo||'não cabe'))+'</div><div class="dim">'+p.largura+'×'+p.profundidade+'×'+p.altura+' mm · x '+p.x+' y '+p.y+'</div><div class="row" style="margin-top:6px"><button class="bg sm" onclick="mesa(\'copiar\',{id:'+p.id+'})">Copiar</button><button class="bg sm" onclick="mesa(\'remover\',{id:'+p.id+'})">Remover</button></div></div>').join(''):'<div class="dim">Nenhuma peça. Envie um STL na aba Início ou crie pela Zoo.</div>';
+ $('mtmp').textContent=j.tempo_estimado_s?'Tempo estimado: '+hms(j.tempo_estimado_s):'';
+ trDom();const s=await api('/api/suporte');if(s&&s.ok!==false){const tp=s.tipo||(s.suporte&&s.suporte.tipo),es=s.estrutura||(s.suporte&&s.suporte.estrutura);document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.v==tp));document.querySelectorAll('#seg2 button').forEach(b=>b.classList.toggle('on',b.dataset.v==es))}}catch(e){}}
+async function mesa(a,d){const j=await post('/api/mesa/'+a,d||{});if(j&&j.ok!==false){toast(a=='fatiar'?'Fatiado!':'Feito');mesaVer()}}
+async function sup(v){const j=await post('/api/suporte',{tipo:v});if(j&&j.ok!==false)mesaVer()}
+async function supE(v){const j=await post('/api/suporte',{estrutura:v});if(j&&j.ok!==false)mesaVer()}
+// ---- zoo
+async function zoo(){const d=$('zt').value.trim();if(d.length<8){toast(TR('Descreva melhor a peça'));return}const j=await post('/api/zoo',{descricao:d,adicionar_na_mesa:true});if(j&&j.ok){$('zmsg').textContent='Criando... (pode levar alguns minutos)';zpoll()}}
+async function zpoll(){try{const j=await api('/api/zoo');const t=j.tarefa||{};$('zmsg').textContent=t.msg||t.estado||'';if(t.estado=='rodando')setTimeout(zpoll,3000);else if(t.estado=='pronto'){toast(TR('Peça pronta e na mesa!'));aviso('Zoo','Peça pronta')}}catch(e){}}
+// ---- avisos do navegador
+function notif(){if(!('Notification' in window)){toast(TR('Este navegador não tem avisos'));return}Notification.requestPermission().then(p=>toast(p=='granted'?'Avisos ativados':'Avisos bloqueados'))}
+function aviso(t,m){try{if('Notification' in window&&Notification.permission=='granted'&&document.hidden)new Notification(t,{body:m,icon:'/icone.svg'})}catch(e){}}
+tick();setInterval(tick,2000);
+let wl=null;async function manter(){try{if('wakeLock' in navigator)wl=await navigator.wakeLock.request('screen')}catch(e){}}document.addEventListener('visibilitychange',()=>{if(!document.hidden){tick();manter()}});
+</script></body></html>
