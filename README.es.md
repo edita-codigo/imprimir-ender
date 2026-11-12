@@ -50,7 +50,7 @@ Lo que ya se usa en la práctica y funciona: imprimir (laminar con CuraEngine, e
 
 ## MCP (controlar el programa con una IA)
 
-`mcp_ender/server.py` ofrece **48 herramientas**: estado, imprimir (pide confirmación), mesa 3D, colores, edición de piezas (la IA puede *ver* la pieza), diagnóstico, Zoo, modo avanzado, cámara y vigilancia. Lista completa en [`mcp_ender/MANUAL_MCP.md`](mcp_ender/MANUAL_MCP.md) (portugués).
+`mcp_ender/server.py` ofrece **61 herramientas**: estado, imprimir (pide confirmación), mesa 3D, colores, edición de piezas (la IA puede *ver* la pieza), diagnóstico, Zoo, modo avanzado, cámara y vigilancia. Lista completa en [`mcp_ender/MANUAL_MCP.md`](mcp_ender/MANUAL_MCP.md) (portugués).
 
 No habla con la impresora directamente: llama a la API del programa, así que los bloqueos de seguridad también valen para la IA. En la pestaña **IA / MCP** genera/copia el token, copia el comando para Claude Code o el JSON para otros clientes, y puede activar el modo **solo lectura**.
 
@@ -67,6 +67,10 @@ Otras impresoras Marlin similares pueden funcionar editando `perfil_impressora.j
 
 - Las claves de IA (JEV/OpenAI/Gemini/Zoo) y el token de red están en archivos `_PRIVADO_*` creados en su PC, **ignorados por git**. Nunca los publique.
 - El programa nunca usa una clave que usted no haya puesto.
+- **La IA solo imprime con tu orden**: `ender_imprimir` exige `confirmo=true`; `ender_peca_criar` y las pruebas que calientan o mueven también piden permiso explícito. El botón PARAR y el modo **solo lectura** valen también para la IA.
+- **Solo habla con tu red**: el MCP solo llama a la API local del programa (`ENDER_URL`, por defecto `http://127.0.0.1:8101`) con tu token; no envía datos a terceros.
+- **Herramientas anotadas**: cada herramienta del MCP declara `readOnlyHint` (solo lee) o `destructiveHint` (puede calentar, mover, imprimir, borrar).
+- Pruebas: `python -m pytest tests`; ninguna usa la impresora.
 
 ## Traducir a otro idioma
 

@@ -50,7 +50,7 @@ O que já é usado e funciona na prática: imprimir (fatiar com CuraEngine, envi
 
 ## MCP (controlar o programa com uma IA)
 
-O servidor `mcp_ender/server.py` tem **48 ferramentas**: status, imprimir (exige confirmação), mesa 3D, cores, editar peça (a IA consegue *ver* a peça), diagnóstico, Zoo, modo avançado, câmera e vigia. Lista completa em [`mcp_ender/MANUAL_MCP.md`](mcp_ender/MANUAL_MCP.md).
+O servidor `mcp_ender/server.py` tem **61 ferramentas**: status, imprimir (exige confirmação), mesa 3D, cores, editar peça (a IA consegue *ver* a peça), diagnóstico, Zoo, modo avançado, câmera e vigia. Lista completa em [`mcp_ender/MANUAL_MCP.md`](mcp_ender/MANUAL_MCP.md).
 
 Ele não fala com a impressora direto: chama a API do programa, então as travas de segurança valem para a IA também. Na aba **IA / MCP** você gera/copia o token, copia o comando pronto para o Claude Code ou o JSON para outros clientes, e pode ligar o modo **somente leitura**.
 
@@ -68,6 +68,10 @@ Outras impressoras Marlin parecidas podem funcionar ajustando `perfil_impressora
 - Chaves de IA (JEV/OpenAI/Gemini/Zoo) e o token da rede ficam em arquivos `_PRIVADO_*` criados no seu PC, **ignorados pelo git**. Nunca os publique.
 - O programa nunca usa chave sua sem você colocá-la.
 - O token da página do celular e do MCP é gerado no seu PC; "Gerar novo token" invalida o anterior.
+- **A IA só imprime com ordem sua**: `ender_imprimir` exige `confirmo=true`; `ender_peca_criar` e os testes que aquecem ou movem também pedem confirmação/permissão explícita. O botão PARAR e o modo **somente leitura** (aba IA / MCP) valem para a IA também.
+- **Só fala com a sua rede**: o MCP chama apenas a API local do programa (`ENDER_URL`, padrão `http://127.0.0.1:8101`) com o seu token; não envia dados a terceiros. Só as funções opcionais de IA (vigia por câmera, Zoo) chamam serviços externos, e só com a chave que você colocou.
+- **Ferramentas anotadas**: cada ferramenta do MCP declara `readOnlyHint` (só lê) ou `destructiveHint` (pode aquecer, mover, imprimir, apagar), para o cliente de IA pedir confirmação nas perigosas.
+- Testes: `python -m pytest tests` (veja [`tests/README.md`](tests/README.md)); nenhum deles usa a impressora.
 
 ## Traduzir para outro idioma
 

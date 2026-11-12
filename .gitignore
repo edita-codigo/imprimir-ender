@@ -22,3 +22,4 @@ importados/
 pecas_editadas/
 idiomas/_*
 notificar_pushover.py
+tests/modelar/saida/

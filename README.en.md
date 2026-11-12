@@ -50,7 +50,7 @@ What is already used in practice and works: printing (slicing with CuraEngine, s
 
 ## MCP (control the program with an AI)
 
-`mcp_ender/server.py` exposes **48 tools**: status, print (needs confirmation), 3D bed, colours, part editing (the AI can *see* the part), diagnostics, Zoo, advanced mode, camera and watchdog. Full list in [`mcp_ender/MANUAL_MCP.md`](mcp_ender/MANUAL_MCP.md) (Portuguese).
+`mcp_ender/server.py` exposes **61 tools**: status, print (needs confirmation), 3D bed, colours, part editing (the AI can *see* the part), diagnostics, Zoo, advanced mode, camera and watchdog. Full list in [`mcp_ender/MANUAL_MCP.md`](mcp_ender/MANUAL_MCP.md) (Portuguese).
 
 It does not talk to the printer directly: it calls the program's API, so the safety locks apply to the AI too. In the **IA / MCP** tab you generate/copy the token, copy the ready command for Claude Code or the JSON for other clients, and can enable **read-only** mode.
 
@@ -68,6 +68,10 @@ Other similar Marlin printers may work by editing `perfil_impressora.json` (bed 
 - AI keys (JEV/OpenAI/Gemini/Zoo) and the network token live in `_PRIVADO_*` files created on your PC, **ignored by git**. Never publish them.
 - The program never uses a key you did not enter.
 - Regenerating the token invalidates the previous one.
+- **The AI only prints on your order**: `ender_imprimir` requires `confirmo=true`; `ender_peca_criar` and the tests that heat or move also need explicit confirmation/permission. The STOP button and the **read-only mode** (IA / MCP tab) apply to the AI too.
+- **Talks only to your network**: the MCP only calls the program's local API (`ENDER_URL`, default `http://127.0.0.1:8101`) with your token; it sends no data to third parties. Only the optional AI features (camera watch, Zoo) call external services, and only with the key you entered.
+- **Annotated tools**: every MCP tool declares `readOnlyHint` (read only) or `destructiveHint` (may heat, move, print, delete), so the AI client can ask for confirmation on the dangerous ones.
+- Tests: `python -m pytest tests` (see [`tests/README.md`](tests/README.md)); none of them uses the printer.
 
 ## Translating to another language
 
