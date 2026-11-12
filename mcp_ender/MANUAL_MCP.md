@@ -126,7 +126,48 @@ Mostra a configuracao de impressao colorida (cor inicial, trocas), em que CAMADA
 **`ender_cores_definir(ativo: bool, cor_inicial_nome: str = '', cor_inicial_hex: str = '', trocas: list[dict] | None = None)`**  
 Configura a impressao COLORIDA (troca de filamento a mao, so mesmo material). trocas = lista de {"modo": "altura" (mm) ou "camada", "valor": numero, "nome": "Vermelho", "hex": "#E5322D"}. Cada troca pausa a impressao: o bico vai ao canto, puxa o filamento velho e avisa o usuario (alarme + celular); o usuario troca e toca CONTINUAR (ender_continuar); o bico cospe ate a cor sair limpa (ender_purgar para cuspir mais) e o usuario toca CONTINUAR de novo. Nao funciona durante uma impressao.
 
-### Editar peça (furo, corte, formas, texto, desenho)
+### Modelar: criar e editar peças por passos (CAD)
+
+**`ender_modelar_ajuda(ferramenta: str = '')`**  
+LEIA PRIMEIRO antes de modelar. Sem argumento: lista TODAS as ferramentas de modelagem (op) da aba Modelar, o formato do desenho 2D (perfil), de 'repetir' e dos seletores de arestas/faces. Com ferramenta='furo' (ou outra op): parametros dessa ferramenta com padrao e opcoes. Como funciona: a peca e uma RECEITA de passos (igual a linha do tempo do Fusion). Voce adiciona passos com ender_modelar_passo(s), OLHA o resultado com ender_modelar_ver e corrige com ender_modelar_editar_passo (muda um numero antigo e a peca inteira se refaz). Coordenadas em mm: X = direita, Y = fundo, Z = cima; a mesa e Z=0; nas formas (x, y) = centro e z = base. Ferramentas: caixa, cilindro, tubo, esfera, cone, toro, prisma, cunha, texto | extrudar, revolucao, loft, varrer (usam desenho 2D) | arredondar, chanfrar, casca, furo, cortar | mover, girar, escalar, espelhar, assentar | importar, codigo.
+
+**`ender_modelar_projetos(acao: str = 'listar', nome: str = '', projeto: str = '')`**  
+Pecas abertas na aba Modelar (da para trabalhar em varias ao mesmo tempo). acao: 'listar' | 'novo' (cria uma peca vazia chamada 'nome' e ja deixa ativa) | 'ativar' | 'fechar' | 'renomear' | 'mostrar' (traz a aba Modelar para a frente no programa, para o usuario ver). projeto = numero (1, 2...) ou nome da peca (vazio = a ativa). As outras ferramentas ender_modelar_* agem na peca ATIVA, a nao ser que recebam 'projeto'.
+
+**`ender_modelar_estado(detalhe: bool = True, projeto: str = '')`**  
+Estado da peca ativa: lista dos passos (com todos os parametros, numerados a partir de 1), variaveis, tamanho/min/max/centro em mm, volume, peso. Com detalhe=true (peca CAD): tabela de FACES (id, tipo, centro, normal) e ARESTAS (id, tipo, meio, comprimento) para usar em arredondar/chanfrar/casca. Se 'erro_no_passo' aparecer, aquele passo falhou e a peca mostrada vai so ate o anterior.
+
+**`ender_modelar_passo(op: str, parametros: dict | None = None, posicao: int | None = None, projeto: str = '')`**  
+ADICIONA um passo a peca ativa. op = nome da ferramenta; parametros = dict (o que faltar usa o padrao; veja ender_modelar_ajuda(op)). Se o passo der erro, ele NAO entra e a peca fica como estava. Exemplos: op='caixa', parametros={'largura': 60, 'profundidade': 40, 'altura': 20, 'raio': 5} op='casca', parametros={'espessura': 2, 'abrir': 'cima'} op='furo', parametros={'diametro': 4, 'x': 20, 'y': 0, 'repetir': {'tipo': 'circular', 'n': 6}}          (z vazio = boca na superficie; direcao '-z' = de cima para baixo) op='extrudar', parametros={'perfil': [{'t': 'ret', 'l': 40, 'a': 20, 'r': 3}, {'t': 'circ', 'd': 8, 'furo': True}], 'plano': 'xy', 'posicao': 0, 'altura': 5, 'modo': 'somar'} op='revolucao', parametros={'perfil': [{'t': 'poli', 'pts': [[0, 0], [20, 0], [24, 30], [20, 30], [17, 3], [0, 3]]}], 'eixo': 'z'}       (u = distancia do eixo, v = altura) op='arredondar', parametros={'raio': 2, 'arestas': 'verticais'}      (ou 'todas', 'cima', 'ultimo', [3, 7] = ids de ender_modelar_estado, {'perto': [[x, y, z]]}) modo (formas e desenhos): 'somar' (padrao), 'subtrair' (tira da peca), 'intersectar', 'novo'. Todo numero aceita conta com variaveis: 'largura/2 + folga'. posicao: indice (0 = primeiro) para inserir no meio da receita; vazio = no fim. Devolve o estado resumido. Depois OLHE com ender_modelar_ver.
+
+**`ender_modelar_passos(lista: list, projeto: str = '')`**  
+ADICIONA varios passos de uma vez, na ordem: lista = [{'op': 'caixa', 'largura': 60, ...}, {'op': 'furo', 'diametro': 4}, ...] (os parametros ficam JUNTO do 'op', no mesmo dict). Para no primeiro que der erro: devolve qual passo da lista falhou e quantos entraram ('aplicados'); os anteriores ficam valendo.
+
+**`ender_modelar_editar_passo(n: int, mudancas: dict, projeto: str = '')`**  
+MUDA parametros de um passo que ja existe (n = numero do passo, a partir de 1; veja ender_modelar_estado). A peca e refeita dali para frente. Ex.: n=1, mudancas={'altura': 30}. Se a mudanca quebrar algum passo seguinte, ela e desfeita e o erro diz qual passo quebrou. Tambem serve para {'nome': 'Base'} (apelido do passo).
+
+**`ender_modelar_historico(acao: str, n: int = 0, projeto: str = '')`**  
+Mexe na receita: acao = 'desfazer' | 'refazer' | 'remover' (apaga o passo n) | 'alternar' (desliga/liga o passo n sem apagar) | 'limpar' (apaga todos os passos; desfazer traz de volta).
+
+**`ender_modelar_variavel(nome: str, valor: str = '', projeto: str = '')`**  
+Cria/muda uma VARIAVEL da peca (ex.: nome='folga', valor='0.2'); valor vazio apaga. Use o nome em qualquer medida ('diametro': '5 + folga*2'). Mudou a variavel -> a peca inteira e refeita.
+
+**`ender_modelar_ver(vista: str = '3d', numeros: str = '', az: float | None = None, el: float | None = None, largura: int = 900, altura: int = 700, projeto: str = '')`**  
+IMAGEM da peca ativa, para voce VER o que fez (use sempre depois de alguns passos). vista: 3d, frente, tras, direita, esquerda, cima, baixo. Ou angulo livre: az (giro em graus) e el (elevacao, -89 a 89). numeros: 'arestas' (escreve o id de cada aresta visivel, em amarelo), 'faces' (id das faces, em azul) ou 'tudo': use para escolher o que arredondar/chanfrar/abrir. As cotas azuis sao o tamanho total em mm. Eixos: X vermelho (direita), Y verde (fundo), Z azul (cima).
+
+**`ender_modelar_ver_4vistas(numeros: str = '', projeto: str = '')`**  
+UMA imagem com 4 vistas da peca ativa (3D, frente, direita, cima): o jeito mais rapido de conferir a forma inteira. numeros ('arestas' | 'faces' | 'tudo') vale so para a vista 3D.
+
+**`ender_modelar_abrir(caminho: str = '', id_peca_mesa: int = 0)`**  
+ABRE uma peca pronta na aba Modelar, numa aba nova. caminho = arquivo .stl/.3mf/.obj (vira MALHA: da para somar formas, furar, cortar, escrever, mover, espelhar; NAO da para arredondar/chanfrar/casca), .step (solido exato: todas as ferramentas) ou .modelo.json (projeto salvo). OU id_peca_mesa = numero da peca na Mesa 3D (ender_mesa_ver). O arquivo original nunca e alterado.
+
+**`ender_modelar_exportar(formato: str = 'stl', caminho: str = '', projeto: str = '')`**  
+Grava a peca ativa num arquivo: formato 'stl' (imprimir), 'step' (solido exato; abre no Fusion/FreeCAD), '3mf' ou 'obj'. caminho vazio = pasta pecas_modeladas do programa. Devolve o caminho.
+
+**`ender_modelar_para_mesa(projeto: str = '')`**  
+Manda a peca ativa para a MESA 3D (grava o STL e adiciona na mesa, centralizada e apoiada). Depois: ender_mesa_ver, ender_mesa_fatiar e, so se o usuario pedir, ender_imprimir.
+
+### Editar peça (antigo; prefira Modelar)
 
 **`ender_editar_abrir(id_peca: int = 0, caminho_stl: str = '')`**  
 ABRE uma peca para editar (a copia: o original nunca e alterado). id_peca = numero da peca na Mesa 3D (veja ender_mesa_ver; ja considera escala e rotacao) OU caminho_stl de um arquivo. Devolve tamanho, min/max e centro em mm. Sistema de coordenadas da edicao: X e Y centrados na peca, Z=0 na base. Depois use ender_editar_ver para VER.

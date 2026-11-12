@@ -423,5 +423,117 @@ def ender_log(linhas: int = 30) -> list:
     return (s.get('log') or [])[-max(1, min(200, int(linhas))):]
 
 
+
+# ============================ MODELAR (CAD: criar e editar pecas por passos) ============================
+def _modelar(corpo, timeout=600):
+    return _chamar('POST', '/api/modelar', corpo, timeout=timeout)
+
+
+@mcp.tool()
+def ender_modelar_ajuda(ferramenta: str = '') -> dict:
+    """LEIA PRIMEIRO antes de modelar. Sem argumento: lista TODAS as ferramentas de modelagem (op) da aba Modelar, o formato do desenho 2D (perfil), de 'repetir' e dos seletores de arestas/faces.
+    Com ferramenta='furo' (ou outra op): parametros dessa ferramenta com padrao e opcoes.
+    Como funciona: a peca e uma RECEITA de passos (igual a linha do tempo do Fusion). Voce adiciona passos com ender_modelar_passo(s), OLHA o resultado com ender_modelar_ver e corrige com
+    ender_modelar_editar_passo (muda um numero antigo e a peca inteira se refaz). Coordenadas em mm: X = direita, Y = fundo, Z = cima; a mesa e Z=0; nas formas (x, y) = centro e z = base.
+    Ferramentas: caixa, cilindro, tubo, esfera, cone, toro, prisma, cunha, texto | extrudar, revolucao, loft, varrer (usam desenho 2D) | arredondar, chanfrar, casca, furo, cortar | mover, girar, escalar, espelhar, assentar | importar, codigo."""
+    return _modelar({'acao': 'ajuda', **({'op': ferramenta} if ferramenta else {})}, 60)
+
+
+@mcp.tool()
+def ender_modelar_projetos(acao: str = 'listar', nome: str = '', projeto: str = '') -> dict:
+    """Pecas abertas na aba Modelar (da para trabalhar em varias ao mesmo tempo). acao: 'listar' | 'novo' (cria uma peca vazia chamada 'nome' e ja deixa ativa) | 'ativar' | 'fechar' | 'renomear' | 'mostrar' (traz a aba Modelar para a frente no programa, para o usuario ver).
+    projeto = numero (1, 2...) ou nome da peca (vazio = a ativa). As outras ferramentas ender_modelar_* agem na peca ATIVA, a nao ser que recebam 'projeto'."""
+    ac = {'listar': 'projetos'}.get(acao, acao)
+    return _modelar({'acao': ac, **({'nome': nome} if nome else {}), **({'projeto': projeto} if projeto else {})}, 120)
+
+
+@mcp.tool()
+def ender_modelar_estado(detalhe: bool = True, projeto: str = '') -> dict:
+    """Estado da peca ativa: lista dos passos (com todos os parametros, numerados a partir de 1), variaveis, tamanho/min/max/centro em mm, volume, peso.
+    Com detalhe=true (peca CAD): tabela de FACES (id, tipo, centro, normal) e ARESTAS (id, tipo, meio, comprimento) para usar em arredondar/chanfrar/casca.
+    Se 'erro_no_passo' aparecer, aquele passo falhou e a peca mostrada vai so ate o anterior."""
+    return _modelar({'acao': 'estado', 'detalhe': detalhe, **({'projeto': projeto} if projeto else {})}, 120)
+
+
+@mcp.tool()
+def ender_modelar_passo(op: str, parametros: dict | None = None, posicao: int | None = None, projeto: str = '') -> dict:
+    """ADICIONA um passo a peca ativa. op = nome da ferramenta; parametros = dict (o que faltar usa o padrao; veja ender_modelar_ajuda(op)). Se o passo der erro, ele NAO entra e a peca fica como estava.
+    Exemplos:
+      op='caixa', parametros={'largura': 60, 'profundidade': 40, 'altura': 20, 'raio': 5}
+      op='casca', parametros={'espessura': 2, 'abrir': 'cima'}
+      op='furo', parametros={'diametro': 4, 'x': 20, 'y': 0, 'repetir': {'tipo': 'circular', 'n': 6}}          (z vazio = boca na superficie; direcao '-z' = de cima para baixo)
+      op='extrudar', parametros={'perfil': [{'t': 'ret', 'l': 40, 'a': 20, 'r': 3}, {'t': 'circ', 'd': 8, 'furo': True}], 'plano': 'xy', 'posicao': 0, 'altura': 5, 'modo': 'somar'}
+      op='revolucao', parametros={'perfil': [{'t': 'poli', 'pts': [[0, 0], [20, 0], [24, 30], [20, 30], [17, 3], [0, 3]]}], 'eixo': 'z'}       (u = distancia do eixo, v = altura)
+      op='arredondar', parametros={'raio': 2, 'arestas': 'verticais'}      (ou 'todas', 'cima', 'ultimo', [3, 7] = ids de ender_modelar_estado, {'perto': [[x, y, z]]})
+    modo (formas e desenhos): 'somar' (padrao), 'subtrair' (tira da peca), 'intersectar', 'novo'. Todo numero aceita conta com variaveis: 'largura/2 + folga'.
+    posicao: indice (0 = primeiro) para inserir no meio da receita; vazio = no fim. Devolve o estado resumido. Depois OLHE com ender_modelar_ver."""
+    return _modelar({'acao': 'passo', 'op': op, **(parametros or {}), **({'posicao': posicao} if posicao is not None else {}), **({'projeto': projeto} if projeto else {})})
+
+
+@mcp.tool()
+def ender_modelar_passos(lista: list, projeto: str = '') -> dict:
+    """ADICIONA varios passos de uma vez, na ordem: lista = [{'op': 'caixa', 'largura': 60, ...}, {'op': 'furo', 'diametro': 4}, ...] (os parametros ficam JUNTO do 'op', no mesmo dict).
+    Para no primeiro que der erro: devolve qual passo da lista falhou e quantos entraram ('aplicados'); os anteriores ficam valendo."""
+    return _modelar({'acao': 'passos', 'lista': lista, **({'projeto': projeto} if projeto else {})})
+
+
+@mcp.tool()
+def ender_modelar_editar_passo(n: int, mudancas: dict, projeto: str = '') -> dict:
+    """MUDA parametros de um passo que ja existe (n = numero do passo, a partir de 1; veja ender_modelar_estado). A peca e refeita dali para frente.
+    Ex.: n=1, mudancas={'altura': 30}. Se a mudanca quebrar algum passo seguinte, ela e desfeita e o erro diz qual passo quebrou. Tambem serve para {'nome': 'Base'} (apelido do passo)."""
+    return _modelar({'acao': 'editar', 'n': n, 'mudancas': mudancas, **({'projeto': projeto} if projeto else {})})
+
+
+@mcp.tool()
+def ender_modelar_historico(acao: str, n: int = 0, projeto: str = '') -> dict:
+    """Mexe na receita: acao = 'desfazer' | 'refazer' | 'remover' (apaga o passo n) | 'alternar' (desliga/liga o passo n sem apagar) | 'limpar' (apaga todos os passos; desfazer traz de volta)."""
+    return _modelar({'acao': acao, **({'n': n} if n else {}), **({'projeto': projeto} if projeto else {})})
+
+
+@mcp.tool()
+def ender_modelar_variavel(nome: str, valor: str = '', projeto: str = '') -> dict:
+    """Cria/muda uma VARIAVEL da peca (ex.: nome='folga', valor='0.2'); valor vazio apaga. Use o nome em qualquer medida ('diametro': '5 + folga*2'). Mudou a variavel -> a peca inteira e refeita."""
+    return _modelar({'acao': 'variavel', 'nome': nome, 'valor': valor, **({'projeto': projeto} if projeto else {})})
+
+
+@mcp.tool()
+def ender_modelar_ver(vista: str = '3d', numeros: str = '', az: float | None = None, el: float | None = None, largura: int = 900, altura: int = 700, projeto: str = '') -> Image:
+    """IMAGEM da peca ativa, para voce VER o que fez (use sempre depois de alguns passos). vista: 3d, frente, tras, direita, esquerda, cima, baixo. Ou angulo livre: az (giro em graus) e el (elevacao, -89 a 89).
+    numeros: 'arestas' (escreve o id de cada aresta visivel, em amarelo), 'faces' (id das faces, em azul) ou 'tudo': use para escolher o que arredondar/chanfrar/abrir. As cotas azuis sao o tamanho total em mm.
+    Eixos: X vermelho (direita), Y verde (fundo), Z azul (cima)."""
+    r = _modelar({'acao': 'imagem', 'vista': vista, 'largura': largura, 'altura': altura, **({'numeros': numeros} if numeros else {}), **({'az': az} if az is not None else {}), **({'el': el} if el is not None else {}),
+                  **({'projeto': projeto} if projeto else {})}, 180)
+    if not r.get('ok'): raise RuntimeError(r.get('erro', 'sem imagem'))
+    return Image(data=base64.b64decode(r['png_base64']), format='png')
+
+
+@mcp.tool()
+def ender_modelar_ver_4vistas(numeros: str = '', projeto: str = '') -> Image:
+    """UMA imagem com 4 vistas da peca ativa (3D, frente, direita, cima): o jeito mais rapido de conferir a forma inteira. numeros ('arestas' | 'faces' | 'tudo') vale so para a vista 3D."""
+    r = _modelar({'acao': 'imagens', **({'numeros': numeros} if numeros else {}), **({'projeto': projeto} if projeto else {})}, 180)
+    if not r.get('ok'): raise RuntimeError(r.get('erro', 'sem imagem'))
+    return Image(data=base64.b64decode(r['png_base64']), format='png')
+
+
+@mcp.tool()
+def ender_modelar_abrir(caminho: str = '', id_peca_mesa: int = 0) -> dict:
+    """ABRE uma peca pronta na aba Modelar, numa aba nova. caminho = arquivo .stl/.3mf/.obj (vira MALHA: da para somar formas, furar, cortar, escrever, mover, espelhar; NAO da para arredondar/chanfrar/casca),
+    .step (solido exato: todas as ferramentas) ou .modelo.json (projeto salvo). OU id_peca_mesa = numero da peca na Mesa 3D (ender_mesa_ver). O arquivo original nunca e alterado."""
+    if id_peca_mesa: return _modelar({'acao': 'pegar_da_mesa', 'id': id_peca_mesa})
+    return _modelar({'acao': 'abrir_arquivo', 'caminho': caminho})
+
+
+@mcp.tool()
+def ender_modelar_exportar(formato: str = 'stl', caminho: str = '', projeto: str = '') -> dict:
+    """Grava a peca ativa num arquivo: formato 'stl' (imprimir), 'step' (solido exato; abre no Fusion/FreeCAD), '3mf' ou 'obj'. caminho vazio = pasta pecas_modeladas do programa. Devolve o caminho."""
+    return _modelar({'acao': 'exportar', 'formato': formato, **({'caminho': caminho} if caminho else {}), **({'projeto': projeto} if projeto else {})})
+
+
+@mcp.tool()
+def ender_modelar_para_mesa(projeto: str = '') -> dict:
+    """Manda a peca ativa para a MESA 3D (grava o STL e adiciona na mesa, centralizada e apoiada). Depois: ender_mesa_ver, ender_mesa_fatiar e, so se o usuario pedir, ender_imprimir."""
+    return _modelar({'acao': 'para_mesa', **({'projeto': projeto} if projeto else {})})
+
+
 if __name__ == '__main__':
     mcp.run()

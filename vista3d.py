@@ -13,6 +13,25 @@ from PIL import Image, ImageDraw, ImageTk
 BG = '#0D1117'
 COR_TIPO = {'WALL-OUTER': '#ff7043', 'WALL-INNER': '#66bb6a', 'SKIN': '#ffd54f', 'FILL': '#8d6e63', 'SUPPORT': '#26c6da', 'SUPPORT-INTERFACE': '#80deea',
             'SKIRT': '#b0bec5', 'PRIME-TOWER': '#ab47bc'}
+_COR_ALT = {'mt': None, 'v': None}
+def _faixas_cor():
+    """Troca de cor por altura (aba Cores): lista [(z_mm, (r,g,b))] ou None. Usada so para PINTAR a vista; nao altera nada da impressao."""
+    try:
+        import os, cores
+        mt = os.path.getmtime(cores.ARQ)
+        if _COR_ALT['mt'] != mt:
+            c = cores.carregar_cfg(); v = None
+            if c.get('ativo') and c.get('trocas'):
+                ini = _rgb(c['inicial']['hex']); fx = [(0.0, ini)]
+                for t in sorted(c['trocas'], key=lambda t: float(t.get('valor', 0))):
+                    z = float(t['valor']) if t.get('modo', 'altura') == 'altura' else float(t['valor']) * 0.2
+                    fx.append((z, _rgb(t['hex'])))
+                v = fx
+            _COR_ALT['mt'] = mt; _COR_ALT['v'] = v
+        return _COR_ALT['v']
+    except Exception:
+        return None
+
 LUZ = np.array([-0.35, -0.55, 0.78]); LUZ = LUZ / np.linalg.norm(LUZ)
 VERM = (255, 107, 107)
 ORCAMENTO = 14000        # triangulos desenhados por quadro (acima disso, as pecas nao selecionadas ficam mais grossas)
@@ -122,7 +141,13 @@ class Vista3D(tk.Canvas):
                 sh = 0.30 + 0.70 * np.abs(nn @ LUZ)
                 base = np.array(VERM if not p.ok else _rgb(p.cor), dtype=float)
                 if p is sel: base = np.clip(base * 0.8 + 70, 0, 255)
-                cor = np.clip(base[None, :] * sh[:, None], 0, 255).astype(int)
+                fx = _faixas_cor()
+                if fx and p.ok:                                  # cor por altura: cada triangulo pega a cor da faixa onde esta (z do centro)
+                    zt3 = tri[:, :, 2].mean(1); bz = np.tile(np.array(fx[0][1], dtype=float), (len(F), 1))
+                    for zi, ci in fx[1:]: bz[zt3 >= zi - 0.01] = np.array(ci, dtype=float)
+                    if p is sel: bz = np.clip(bz * 0.9 + 35, 0, 255)
+                    cor = np.clip(bz * (0.38 + 0.62 * np.abs(nn @ LUZ))[:, None], 0, 255).astype(int)
+                else: cor = np.clip(base[None, :] * sh[:, None], 0, 255).astype(int)
             P2.append(S); Z.append(zt); C.append(cor)
         if not P2: return None
         return np.concatenate(P2), np.concatenate(Z), np.concatenate(C)

@@ -1,4 +1,4 @@
-"""Fila de impressao: varios arquivos em sequencia. Entre uma peca e outra o programa PARA e espera o usuário tirar a peca
+"""Fila de impressao: varios arquivos em sequencia. Entre uma peca e outra o programa PARA e espera o Victor tirar a peca
 (botao na tela ou no celular). Avisa no celular (Pushover) ao terminar cada peca, na falha e quando a fila acabar.
 Estado guardado em fila.json (sobrevive a fechar o programa)."""
 import os, json, time, threading, uuid

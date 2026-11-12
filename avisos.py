@@ -4,7 +4,7 @@ Tudo em thread e sem derrubar o programa se falhar."""
 import os, json, threading, importlib.util, time
 
 PASTA = os.path.dirname(os.path.abspath(__file__))
-SCRIPT = os.environ.get('ENDER_PUSHOVER_SCRIPT', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'notificar_pushover.py'))   # opcional: seu script com notificar(titulo, texto)
+SCRIPT = r'C:\xampp2\htdocs\projetos\codigos\notificar_pushover.py'
 CFG = os.path.join(PASTA, 'avisos.json')
 PADRAO = dict(pushover=True, terminou=True, erro=True, vigia=True, tirar_peca=True, filamento=True, pausa=True)
 TITULO = 'Imprimir Ender'

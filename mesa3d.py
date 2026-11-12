@@ -77,6 +77,12 @@ class Peca:
     @property
     def altura(self): return self.h0 * self.esc / 100.0
 
+    @property
+    def grupo(self):
+        """Pecas vindas do MESMO 3MF (pasta importados/<nome>/) formam um conjunto montado: podem ficar sobrepostas e mostram a cor real."""
+        d = os.path.dirname(self.caminho).replace('\\', '/')
+        return d if 'importados' in d.split('/') else None
+
     def vertices_mesa(self, V):
         """V = vertices da malha centrada (z>=0). Devolve em coordenadas da mesa (x,y 0..220)."""
         f = self.esc / 100.0
@@ -279,13 +285,22 @@ class Mesa(tk.Frame):
             itens = importar_3mf.exportar_partes(partes, pasta, caminho)
         except Exception as e:
             messagebox.showerror('3MF', 'Não consegui ler esse 3MF:\n%s' % e, parent=self); return None
-        n = 0
-        for it in itens:
-            p = self.add_arquivo(it['stl'], cor=it['cor'], nome=it['nome'])
-            if p is not None: n += 1
-        if organizar: self.organizar(silencioso=True)
+        n = 0; pares = []
+        for k, it in enumerate(itens):
+            p = self.add_arquivo(it['stl'], cor=it['cor'], nome=it['nome'], autoajustar=False)
+            if p is not None: n += 1; pares.append((p, partes[k].malha.bounds))
+        # as peças do 3MF ficam MONTADAS como no arquivo (posição original) e o conjunto todo é reduzido por igual se for maior que a mesa
+        aviso = ''
+        if pares:
+            mn = np.min([b[0] for _, b in pares], axis=0); mx = np.max([b[1] for _, b in pares], axis=0); C = (mn + mx) / 2
+            esc = self._escala_que_cabe(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]); f = esc / 100.0
+            for p, b in pares:
+                c = (b[0] + b[1]) / 2
+                p.rot = 0.0; p.esc = esc; p.x = BED_X / 2 + f * (c[0] - C[0]); p.y = BED_Y / 2 + f * (c[1] - C[1])
+            if esc < 100.0: aviso = ' Era maior que a mesa: reduzi tudo para %.1f%% (mesma proporção em todas as peças).' % esc
+        elif organizar: self.organizar(silencioso=True)
         self.redesenhar()
-        self.lstatus.config(text='3MF lido: %s. Use "Imprimir só uma cor" para imprimir uma cor de cada vez.' % resumo, fg=VERDE)
+        self.lstatus.config(text='3MF lido: %s.%s Use "Imprimir só uma cor" para imprimir uma cor de cada vez.' % (resumo, aviso), fg=VERDE)
         return dict(ok=True, resumo=resumo, partes=[dict(nome=i['nome'], cor=i['cor_nome'], hex=i['cor']) for i in itens], adicionadas=n)
 
     def cor_de(self, p):
@@ -319,7 +334,13 @@ class Mesa(tk.Frame):
         self.pecas = manter; self.estoque = guardar; self.sel = self.pecas[0] if self.pecas else None
         self.organizar(silencioso=True); self.redesenhar(); return True
 
-    def add_arquivo(self, caminho, copia_de=None, so_se_couber=False, cor=None, nome=None):
+    def _escala_que_cabe(self, larg, prof, alt):
+        """Escala (%) maxima <= 100 para um objeto larg x prof x alt (mm) caber na mesa (com a margem) e na altura. So diminui, nunca aumenta."""
+        mar = self.var_mar.get()
+        s = min(1.0, (BED_X - 2 * mar) / max(larg, 1e-6), (BED_Y - 2 * mar) / max(prof, 1e-6), BED_Z / max(alt, 1e-6))
+        return 100.0 if s >= 1.0 else math.floor(s * 0.995 * 1000) / 10.0       # arredonda p/ baixo (0,5% de folga) p/ nunca passar da borda
+
+    def add_arquivo(self, caminho, copia_de=None, so_se_couber=False, cor=None, nome=None, autoajustar=True):
         if os.path.basename(caminho).startswith('mesa_'):
             messagebox.showinfo('Mesa 3D', 'Esse arquivo (%s) é a mesa JÁ MONTADA pelo programa, com todas as peças juntas.\nAdicione o STL original da peça.' % os.path.basename(caminho), parent=self); return None
         try:
@@ -335,11 +356,16 @@ class Mesa(tk.Frame):
         if nome: pc.nome = nome
         if copia_de is not None: pc.rot, pc.esc = copia_de.rot, copia_de.esc; pc.cor_fixa = getattr(copia_de, 'cor_fixa', None); pc.cor = copia_de.cor if pc.cor_fixa else pc.cor
         self.ncor += 1
+        aviso = None
+        if copia_de is None and autoajustar:       # arquivo maior que a mesa: so diminui a porcentagem (o arquivo nao e alterado)
+            w, h = pc.tamanho(); e = self._escala_que_cabe(w, h, pc.altura)
+            if e < 100.0: pc.esc = e; aviso = 'Arquivo maior que a mesa: reduzi para %.1f%% para caber (o arquivo original não foi alterado).' % e
         self.pecas.append(pc)
         if not self._lugar_livre(pc) and so_se_couber:
             self.pecas.remove(pc); return None
         self.sel = pc
         self.redesenhar()
+        if aviso: self.lstatus.config(text=aviso, fg=AMARELO)
         return pc
 
     def _lugar_livre(self, pc):
@@ -482,6 +508,7 @@ class Mesa(tk.Frame):
             if p.altura > BED_Z:
                 p.ok, p.motivo = False, 'alta demais (%.0f mm, limite %.0f)' % (p.altura, BED_Z)
             for o in self.pecas[i + 1:]:
+                if p.grupo and p.grupo == o.grupo: continue      # camadas/cores do mesmo 3MF ficam sobrepostas de proposito (conjunto montado)
                 if not _separadas(c, o.contorno(), gap):
                     for q in (p, o):
                         if q.ok: q.ok, q.motivo = False, 'muito perto de outra peça (menos de %.1f mm)' % gap
@@ -646,7 +673,7 @@ class Mesa(tk.Frame):
         try:
             if acao == 'imagem':
                 import io as _io, base64 as _b64
-                nome = str(d.get('vista', '3d')); az, el = {'frente': (-90.0, 9.0), 'topo': (-90.0, 89.0), 'lado': (0.0, 9.0), '3d': (-62.0, 30.0)}.get(nome, (-62.0, 30.0))
+                nome = str(d.get('vista', '3d')); az, el = {'frente': (-90.0, 9.0), 'topo': (-90.0, 89.0), 'lado': (0.0, 9.0), 'baixo': (-90.0, -80.0), '3d': (-62.0, 30.0)}.get(nome, (-62.0, 30.0))
                 img = self.vista.render(int(d.get('largura', 1000)), int(d.get('altura', 760)), az, el, 430.0 if nome != 'topo' else 400.0, (BED_X / 2, BED_Y / 2, 20.0), esc=1.5)
                 b = _io.BytesIO(); img.save(b, 'PNG'); return dict(ok=True, png_base64=_b64.b64encode(b.getvalue()).decode())
             if acao == 'importar3mf':

@@ -9,7 +9,8 @@ GRUPOS = [
     ('Câmera e vigia', ('ender_flash', 'ender_foto', 'ender_vigia_testar', 'ender_vigia_ativar')),
     ('Mesa 3D (peças, cores, suporte)', ('ender_mesa_', 'ender_suporte_')),
     ('Impressão colorida', ('ender_cores_',)),
-    ('Editar peça (furo, corte, formas, texto, desenho)', ('ender_editar_',)),
+    ('Modelar: criar e editar peças por passos (CAD)', ('ender_modelar_',)),
+    ('Editar peça (antigo; prefira Modelar)', ('ender_editar_',)),
     ('Criar peça por texto (Zoo)', ('ender_peca_',)),
     ('Modo avançado (início/fim, ventoinha, G-code extra)', ('ender_avancado_',)),
 ]

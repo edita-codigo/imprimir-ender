@@ -12,6 +12,7 @@ Endpoints (todos com ?t=TOKEN ou header X-Token):
   POST /api/cores {"ativo":bool,"inicial":{"nome","hex"},"trocas":[{"modo":"altura|camada","valor":n,"nome","hex"}]}
   GET  /api/zoo | POST /api/zoo {descricao, adicionar_na_mesa}   criar peca por texto (Zoo; so se autorizado na aba Criar peca)
   POST /api/editar {acao: abrir|estado|furo|cortar|forma|texto|poligono|desfazer|original|salvar|imagem, ...}   editar uma peca e VER o resultado (png em base64)
+  POST /api/modelar {acao: ajuda|projetos|novo|ativar|fechar|renomear|estado|passo|passos|editar|remover|alternar|limpar|variavel|desfazer|refazer|imagem|imagens|exportar|para_mesa|abrir_arquivo|pegar_da_mesa, ...}   aba Modelar (CAD): criar/editar pecas por passos e VER (png base64)
   GET  /api/diagnostico | POST /api/diagnostico {testes:[ids]|'seguros'|'todos', permitir_aquecer, permitir_mover, permitir_extrusor}   testa as pecas da impressora
   GET  /api/avancado | POST /api/avancado {...}   modo avancado (inicio/fim, ventoinha, G-code extra, ajustes do fatiador)
   POST /api/gcode {"comandos":[...],"permitir_outros":false}   G-code livre (parada; so comandos seguros)
@@ -64,7 +65,7 @@ def somente_leitura(v=None):
 
 def ip_local():
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(('8.8.8.8', 80)); ip = s.getsockname()[0]; s.close(); return ip
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(('192.168.5.1', 80)); ip = s.getsockname()[0]; s.close(); return ip
     except Exception:
         return '127.0.0.1'
 
@@ -158,6 +159,7 @@ def iniciar(app, porta=PORTA_PADRAO):
                 if u.path == '/api/zoo': return self._json(app.api_zoo(json.loads(corpo or b'{}')))
                 if u.path == '/api/diagnostico': return self._json(app.api_diagnostico(json.loads(corpo or b'{}') or {'testes': 'seguros'}))
                 if u.path == '/api/editar': return self._json(app.no_tk(lambda: app.api_editar(json.loads(corpo or b'{}')), 300))
+                if u.path == '/api/modelar': return self._json(app.no_tk(lambda: app.api_modelar(json.loads(corpo or b'{}')), 600))
                 if u.path == '/api/gcode':
                     d = json.loads(corpo or b'{}'); return self._json(app.api_gcode(d.get('comandos'), bool(d.get('permitir_outros'))))
                 if u.path.startswith('/api/mesa/'):

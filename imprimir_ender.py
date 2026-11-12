@@ -20,6 +20,7 @@ import zoo_cad
 import zoo_ui
 import mcp_ui
 import editar_ui
+import modelar_ui
 import testes_hw
 import testes_ui
 import i18n
@@ -98,7 +99,9 @@ class Medidor(tk.Canvas):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title('Imprimir na Ender-3 V3 SE'); self.configure(bg=BG); self.geometry('1280x960'); self.minsize(1180, 820)
+        self.title('Imprimir na Ender-3 V3 SE'); self.configure(bg=BG)
+        alt = max(640, min(960, self.winfo_screenheight() - 78))                 # em tela baixa (notebook, zoom do Windows) a janela nao passa por baixo da barra de tarefas
+        self.geometry('1280x%d+%d+0' % (alt, max(0, (self.winfo_screenwidth() - 1280) // 2))); self.minsize(1180, min(820, alt))
         self.cmds = []; self.tempos = []; self.cams = []; self.total = 0; self.ncam = 0; self.ini_peca = 0; self.bico = 245; self.mesa = 100
         self.parar = False; self.imprimindo = False; self.ocupado = False; self.arquivo = ''; self.info_txt = ''; self.info_cor = DIM; self.aviso = None; self.porta_txt = ''
         self.v_sup = tk.StringVar(value=SUPORTES[0]); self.v_ang = tk.IntVar(value=50); self.v_ades = tk.StringVar(value=ADESOES[0])
@@ -135,7 +138,7 @@ class App(tk.Tk):
         linha_abas = tk.Frame(self, bg=BG); linha_abas.pack(fill='x', padx=18, pady=(0, 6))        # as abas ficam numa linha propria (sao 13; em tela pequena nao passam por cima do idioma/celular)
         pill = tk.Frame(linha_abas, bg=CARD, highlightthickness=1, highlightbackground=LINHA); pill.pack(side='left')
         self.tabs = {}
-        for nome in ('Imprimir', 'Mesa 3D', 'Criar peça', 'Editar peça', 'Fila', 'Cores', 'Testar impressora', 'Manual', 'Filamento', 'Vigia', 'Avançado', 'IA / MCP', 'Sensor'):
+        for nome in ('Imprimir', 'Mesa 3D', 'Modelar', 'Criar peça', 'Fila', 'Cores', 'Testar impressora', 'Manual', 'Filamento', 'Vigia', 'Avançado', 'IA / MCP', 'Sensor'):
             b = tk.Button(pill, text=nome, command=lambda n=nome: self.aba(n), relief='flat', bd=0, font=('Segoe UI', 9, 'bold'), padx=7, pady=7, cursor='hand2')
             b.pack(side='left', padx=3, pady=3); self.tabs[nome] = b
         chip2 = tk.Frame(topo, bg=CARD, highlightthickness=1, highlightbackground=LINHA); chip2.pack(side='right', padx=(8, 0))
@@ -152,7 +155,7 @@ class App(tk.Tk):
         tk.Button(self.fbanner, text='SILENCIAR E FECHAR', command=self.silenciar_alarme, bg='#0D1117', fg='white', relief='flat', bd=0, font=('Segoe UI', 11, 'bold'), padx=14, pady=8, cursor='hand2').pack(side='right', padx=14)
         self.corpo = tk.Frame(self, bg=BG); self.corpo.pack(fill='both', expand=True)
         self.f_imp = tk.Frame(self.corpo, bg=BG); self.f_sen = tk.Frame(self.corpo, bg=BG); self.f_mesa = tk.Frame(self.corpo, bg=BG); self.f_vigia = tk.Frame(self.corpo, bg=BG)
-        self.f_fila = tk.Frame(self.corpo, bg=BG); self.f_man = tk.Frame(self.corpo, bg=BG); self.f_fil = tk.Frame(self.corpo, bg=BG); self.f_cor = tk.Frame(self.corpo, bg=BG); self.f_av = tk.Frame(self.corpo, bg=BG); self.f_zoo = tk.Frame(self.corpo, bg=BG); self.f_mcp = tk.Frame(self.corpo, bg=BG); self.f_edit = tk.Frame(self.corpo, bg=BG); self.f_test = tk.Frame(self.corpo, bg=BG)
+        self.f_fila = tk.Frame(self.corpo, bg=BG); self.f_man = tk.Frame(self.corpo, bg=BG); self.f_fil = tk.Frame(self.corpo, bg=BG); self.f_cor = tk.Frame(self.corpo, bg=BG); self.f_av = tk.Frame(self.corpo, bg=BG); self.f_zoo = tk.Frame(self.corpo, bg=BG); self.f_mcp = tk.Frame(self.corpo, bg=BG); self.f_edit = tk.Frame(self.corpo, bg=BG); self.f_test = tk.Frame(self.corpo, bg=BG); self.f_mod = tk.Frame(self.corpo, bg=BG)
         self.montar_imprimir(self.f_imp); self.montar_sensor(self.f_sen); self.montar_vigia(self.f_vigia); self.montar_fila(self.f_fila)
         self.painel_manual = mn.Manual(self.f_man, self); self.painel_manual.pack(fill='both', expand=True)
         self.painel_fil = cb.Filamento(self.f_fil, self); self.painel_fil.pack(fill='both', expand=True)
@@ -161,6 +164,7 @@ class App(tk.Tk):
         self.painel_zoo = zoo_ui.PainelZoo(self.f_zoo, self); self.painel_zoo.pack(fill='both', expand=True)
         self.painel_mcp = mcp_ui.PainelMCP(self.f_mcp, self); self.painel_mcp.pack(fill='both', expand=True)
         self.painel_edit = editar_ui.PainelEditar(self.f_edit, self); self.painel_edit.pack(fill='both', expand=True)
+        self.painel_mod = modelar_ui.PainelModelar(self.f_mod, self); self.painel_mod.pack(fill='both', expand=True)      # criar + editar pecas (CAD), ligado ao MCP
         self.diag = dict(estado='parado', resultados=[], atual='', msg='', pulados=[])
         self.painel_testes = testes_ui.PainelTestes(self.f_test, self); self.painel_testes.pack(fill='both', expand=True)
         self.painel_mesa = mesa3d.Mesa(self.f_mesa, self); self.painel_mesa.pack(fill='both', expand=True)
@@ -197,8 +201,8 @@ class App(tk.Tk):
         if self.link: self.clipboard_clear(); self.clipboard_append(self.link); self.say('Link copiado.')
 
     def aba(self, nome):
-        for fr in (self.f_imp, self.f_sen, self.f_mesa, self.f_vigia, self.f_fila, self.f_man, self.f_fil, self.f_cor, self.f_av, self.f_zoo, self.f_mcp, self.f_edit, self.f_test): fr.pack_forget()
-        {'Imprimir': self.f_imp, 'Sensor': self.f_sen, 'Mesa 3D': self.f_mesa, 'Vigia': self.f_vigia, 'Fila': self.f_fila, 'Manual': self.f_man, 'Filamento': self.f_fil, 'Cores': self.f_cor, 'Avançado': self.f_av, 'Criar peça': self.f_zoo, 'IA / MCP': self.f_mcp, 'Editar peça': self.f_edit, 'Testar impressora': self.f_test}[nome].pack(fill='both', expand=True)
+        for fr in (self.f_imp, self.f_sen, self.f_mesa, self.f_vigia, self.f_fila, self.f_man, self.f_fil, self.f_cor, self.f_av, self.f_zoo, self.f_mcp, self.f_edit, self.f_test, self.f_mod): fr.pack_forget()
+        {'Imprimir': self.f_imp, 'Sensor': self.f_sen, 'Mesa 3D': self.f_mesa, 'Vigia': self.f_vigia, 'Fila': self.f_fila, 'Manual': self.f_man, 'Filamento': self.f_fil, 'Cores': self.f_cor, 'Avançado': self.f_av, 'Criar peça': self.f_zoo, 'IA / MCP': self.f_mcp, 'Editar peça': self.f_edit, 'Testar impressora': self.f_test, 'Modelar': self.f_mod}[nome].pack(fill='both', expand=True)
         self.aba_atual = nome
         if nome == 'Mesa 3D': self.painel_mesa.mostrar()
         if nome == 'IA / MCP': self.painel_mcp.atualizar()
@@ -867,6 +871,10 @@ class App(tk.Tk):
         """Edita uma peca (furo, corte, formas, texto, desenho) e devolve imagem. Ver servidor_rede.py / manual MCP."""
         return self.painel_edit.api(d or {})
 
+    def api_modelar(self, d):
+        """Aba Modelar pela rede/MCP: criar e editar pecas por passos (formas, desenho, arredondar, casca, furo...) e VER o resultado. Ver modelar_ui.api."""
+        return self.painel_mod.api(d or {})
+
     def agendar_prev_av(self):
         try: self.painel_av.recarregar()
         except Exception: pass
@@ -1047,7 +1055,7 @@ class App(tk.Tk):
         fim = time.time() + limite
         while time.time() < fim:
             if self.parar and not ignora_parar: return 'PARADO'
-            if self.fw_pausado and self.continuar_evt.is_set():           # o usuário tocou CONTINUAR depois de uma pausa da propria placa
+            if self.fw_pausado and self.continuar_evt.is_set():           # o Victor tocou CONTINUAR depois de uma pausa da propria placa
                 L.tx('M108'); self.fw_pausado = False; self.pausado = False; self.continuar_evt.clear(); self._fw_m108 = time.time(); self.st['msg'] = 'Continuando...'; self.say('M108: pedindo para a impressora continuar')
                 fim = time.time() + limite
             l = L.rx()
